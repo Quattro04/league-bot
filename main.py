@@ -1,7 +1,5 @@
-# Anakin Trotter
-# 2/28/2021
-# This is a robust League of Legends bot for automatically leveling up accounts.
-# It will attempt to restart itself if something goes wrong.
+# https://github.com/Quattro04
+# 05/13/2022
 
 import subprocess
 import pyautogui
