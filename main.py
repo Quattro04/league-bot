@@ -2,6 +2,7 @@
 # 05/13/2022
 
 import subprocess
+from cv2 import log
 import pyautogui
 import pydirectinput
 import os
@@ -31,28 +32,29 @@ states = ["queue", "champ select", "loading", "game", "post"]
 state = states[0]
 nexus = [1860, 720]
 images = {
-    "play": "images/play button.png",
-    "coop": "images/coop.png",
-    "beginner": "images/beginner.png",
-    "confirm": "images/confirm.png",
-    "queue": "images/find match.png",
     "accept": "images/accept button.png",
-    "free": "images/free champ.png",
-    "pick": "images/lock in.png",
-    "nexus": "images/nexus.png",
-    "win": "images/continue.png",
-    "ok": "images/ok.png",
-    "again": "images/play again button.png",
-    "missions": "images/missions.png",
-    "select": "images/select.png",
-    "honor": "images/honor.png",
-    "clash": "images/got it.png",
-    "choose": "images/choose.png",
-    "qing": "images/in q.png",
-    "custom": "images/custom.png",
     "addBot": "images/add_bot.png",
-    "startGame": "images/start_game.png",
+    "again": "images/play again button.png",
+    "beginner": "images/beginner.png",
+    "choose": "images/choose.png",
+    "clash": "images/got it.png",
+    "coop": "images/coop.png",
+    "confirm": "images/confirm.png",
+    "custom": "images/custom.png",
+    "death": "images/game/death.png",
+    "free": "images/free champ.png",
+    "honor": "images/honor.png",
     "midlane": "images/game/midlane.png",
+    "missions": "images/missions.png",
+    "nexus": "images/nexus.png",
+    "ok": "images/ok.png",
+    "play": "images/play button.png",
+    "pick": "images/lock in.png",
+    "qing": "images/in q.png",
+    "queue": "images/find match.png",
+    "select": "images/select.png",
+    "startGame": "images/start_game.png",
+    "win": "images/continue.png",
 }
 
 
@@ -73,11 +75,11 @@ def click(loc, delay=0.2, button="left"):
     time.sleep(0.05)
     pydirectinput.mouseUp(None, None, button)
 
-def click_button(image, delay=0.2, timeout=5, button="left"):
+def click_button(image, delay=0.2, timeout=5, button="left", confidence=0.8):
     start_time = time.time()
     loc = None
     while time.time() - start_time < timeout:
-        loc = pyautogui.locateCenterOnScreen(image=image, confidence=0.8, grayscale=True)
+        loc = pyautogui.locateCenterOnScreen(image=image, confidence=confidence, grayscale=True)
         if loc is not None:
             break
     if loc is None:
@@ -120,7 +122,7 @@ def make_lobby_custom():
     print("Making custom lobby.")
     global state
     if (click_button(images.get("play")) and click_button(images.get("custom"))
-        and click_button(images.get("confirm")) and click_button(images.get("addBot")) and click_button(images.get("startGame"))):
+        and click_button(images.get("confirm")) and click_button(images.get("startGame"))):
         state = states[0]
         return True
     else:
@@ -192,6 +194,20 @@ def loading_screen(timeout=420):
     print("Loading screen timed out.")
     return False
 
+def buyDoranShieldAndPotion():
+    pydirectinput.press("p")
+    pydirectinput.keyDown("ctrl")
+    pydirectinput.press("l")
+    pydirectinput.keyUp("ctrl")
+    pydirectinput.write("dor")
+    pydirectinput.press("enter")
+    pydirectinput.keyDown("ctrl")
+    pydirectinput.press("l")
+    pydirectinput.keyUp("ctrl")
+    pydirectinput.write("potion")
+    pydirectinput.press("enter")
+    pydirectinput.press("p")
+
 def gotoMidLane():
     # counter = 5
     # pyautogui.mouseDown(button='right')
@@ -205,34 +221,101 @@ def gotoMidLane():
     time.sleep(10)
     return
 
+def useAbilities():
+    pydirectinput.keyDown("ctrl")
+    pydirectinput.press("q")
+    pydirectinput.press("w")
+    pydirectinput.press("e")
+    pydirectinput.press("r")
+    pydirectinput.keyUp("ctrl")
+    time.sleep(1)
+    pydirectinput.press("q")
+    time.sleep(1)
+    pydirectinput.press("w")
+    time.sleep(1)
+    pydirectinput.press("e")
+    time.sleep(1)
+    return
+
 def game():
     time.sleep(1)
     pydirectinput.press("y")
-    # pydirectinput.press("p")
-    # pydirectinput.keyDown("ctrl")
-    # pydirectinput.press("l")
-    # pydirectinput.keyUp("ctrl")
-    # pydirectinput.write("dor")
-    # pydirectinput.press("enter")
-    # pydirectinput.press("p")
-    start_time = time.time()
-    timer = start_time
-    while True: # not click_button(image=images.get("win")
-        print("BEFORE GOTO LANE")
 
-        # Wait so the character can move
-        time.sleep(15)
+    print("BUYING ITEMS")
+    buyDoranShieldAndPotion()
 
-        gotoMidLane()
+    print("WATING FOR BARRIERS TO GO DOWN")
+    time.sleep(10)
 
-        print("AFTER GOTO LANE")
+    print("GOING TO TOP LANE")
+    click([1436, 775], 0.2, "right")
 
-        time.sleep(0.5)
-        pydirectinput.press("a")
-        pyautogui.click(x=1920 * (0.55 + (random.random()*0.1)), y=1080 * (0.15 + (random.random()*0.3)), duration=0.2)
+    print("WAITING FOR MINIONS")
 
-        time.sleep(60)
-        # time.sleep(4)
+    time.sleep(60)
+
+    lane = 0
+    idleCounter = 0
+    first = True
+    while not click_button(image=images.get("win")):
+        
+        if first:
+            first = False
+        else:
+            lane = random.randint(0, 6)
+
+        if lane == 0:
+            print("ATTACKING TOP LANE")
+            pydirectinput.press("a")
+            click([1457, 742])
+        elif lane == 1:
+            print("ATTACKING MID LANE")
+            pydirectinput.press("a")
+            click([1514, 803])
+        elif lane == 2:
+            print("ATTACKING BOT LANE")
+            pydirectinput.press("a")
+            click([1570, 870])
+        elif lane == 3:
+            print("ATTACKING WOLVES")
+            pydirectinput.press("a")
+            click([1468, 817])
+        elif lane == 4:
+            print("ATTACKING WRAITHS")
+            pydirectinput.press("a")
+            click([1502, 829])
+        elif lane == 5:
+            print("ATTACKING GOLEMS")
+            pydirectinput.press("a")
+            click([1518, 860])
+        elif lane == 6:
+            print("ATTACKING FROG")
+            pydirectinput.press("a")
+            click([1447, 796])
+
+        print("WAITING TO DIE")
+        while not pyautogui.locateOnScreen(image=images.get("death"), confidence=0.8, grayscale=True):
+            time.sleep(1)
+            idleCounter += 1
+            if idleCounter == 10 or idleCounter == 20:
+                print("USING ABILITIES")
+                useAbilities()
+            if idleCounter > 30:
+                break
+        
+        if idleCounter > 30:
+            print("IDLE COUNTER, RESETTING")
+            idleCounter = 0
+            continue
+
+        idleCounter = 0
+        print("DETECTED DEATH, WAITING TO RES")
+        while pyautogui.locateOnScreen(image=images.get("death"), confidence=0.8, grayscale=True):
+            time.sleep(1)
+
+        print("RESURECTED, RESTARTING")
+
+        # pyautogui.click(x=1920 * (0.55 + (random.random()*0.1)), y=1080 * (0.15 + (random.random()*0.3)), duration=0.2)
 
         # pyautogui.rightClick(x=1920 * (0.25 + (random.random()*0.1)), y=1080 * (0.65 + (random.random()*0.1)), duration=0.2, tween=pyautogui.easeInSine)
 
